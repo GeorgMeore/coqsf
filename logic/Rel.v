@@ -102,18 +102,26 @@ Proof.
     Show that the [total_relation] defined in (an exercise in)
     [IndProp] is not a partial function. *)
 
-(* FILL IN HERE
-
-    [] *)
+Theorem total_relation_not_partial:
+  ~ (partial_function total_relation).
+Proof.
+  intros H. assert (0 = 1).
+    { apply (H 0 0 1). apply total_pair. apply total_pair. }
+  discriminate.
+Qed.
+(* [] *)
 
 (** **** Exercise: 2 stars, standard, optional (empty_relation_partial)
 
     Show that the [empty_relation] defined in (an exercise in)
     [IndProp] is a partial function. *)
 
-(* FILL IN HERE
-
-    [] *)
+Theorem empty_relation_partial:
+  partial_function empty_relation.
+Proof.
+  intros x y1 y2 H1. inversion H1.
+Qed.
+(* [] *)
 
 (* ----------------------------------------------------------------- *)
 (** *** Reflexive Relations *)
@@ -168,7 +176,9 @@ Proof.
   unfold lt. unfold transitive.
   intros n m o Hnm Hmo.
   induction Hmo as [| m' Hm'o].
-    (* FILL IN HERE *) Admitted.
+  - apply (le_S (S n) m Hnm).
+  - apply (le_S (S n) m' IHHm'o).
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (lt_trans'')
@@ -181,7 +191,11 @@ Proof.
   unfold lt. unfold transitive.
   intros n m o Hnm Hmo.
   induction o as [| o'].
-  (* FILL IN HERE *) Admitted.
+  - inversion Hmo.
+  - inversion Hmo.
+    * rewrite <- H0. apply le_S. apply Hnm.
+    * apply IHo' in H0. apply le_S. apply H0.
+Qed.
 (** [] *)
 
 (** The transitivity of [le], in turn, can be used to prove some facts
@@ -199,7 +213,10 @@ Qed.
 Theorem le_S_n : forall n m,
   (S n <= S m) -> (n <= m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m H. inversion H.
+  - apply le_n.
+  - apply le_Sn_le in H1. apply H1.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (le_Sn_n_inf)
@@ -211,16 +228,34 @@ Proof.
     A formal proof of this is an optional exercise below, but try
     writing an informal proof without doing the formal proof first.
 
-    Proof: *)
-    (* FILL IN HERE
+    Proof: By induction on [n].
 
-    [] *)
+    If [n = 0] then we get a contradiction since there is no rule
+    that could justify [S 0 <= 0].
+
+    Let [n = S n'] and [~ (S n' <= n')]. Suppose that [S n <= n].
+    Then by the definition of [le] either [S n = n] or [S n <= n'] must hold.
+
+    If [S n = n] then [S n' = n'] because [S] is injective.
+    But that means that [S n' <= n'] and hence we get a contradiction.
+
+    If [S n <= n'] then [S (S n') <= n']. By applying [le_S_n] we get [S n' <= n'],
+    which again leads us to a contradiction.
+
+    Qed. *)
+(* [] *)
+Check le_S.
 
 (** **** Exercise: 1 star, standard, optional (le_Sn_n) *)
 Theorem le_Sn_n : forall n,
   ~ (S n <= n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  induction n.
+  - intros H. inversion H.
+  - intros H. inversion H.
+    * apply IHn. rewrite H1. apply le_n.
+    * apply IHn. apply le_Sn_le in H1. apply H1.
+Qed.
 (** [] *)
 
 (** Reflexivity and transitivity are the main concepts we'll need for
@@ -239,7 +274,10 @@ Definition symmetric {X: Type} (R: relation X) :=
 Theorem le_not_symmetric :
   ~ (symmetric le).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros H. assert (1 <= 0) as Contra.
+    { apply (H 0 1). apply le_S. apply le_n. }
+  inversion Contra.
+Qed.
 (** [] *)
 
 (** A relation [R] is _antisymmetric_ if [R a b] and [R b a] together
@@ -253,7 +291,12 @@ Definition antisymmetric {X: Type} (R: relation X) :=
 Theorem le_antisymmetric :
   antisymmetric le.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros a. induction a.
+  - intros b H1 H2. inversion H2. reflexivity.
+  - intros b H1 H2. destruct b.
+    * inversion H1.
+    * f_equal. apply IHa. apply le_S_n. apply H1. apply le_S_n. apply H2.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (le_step) *)
@@ -262,7 +305,10 @@ Theorem le_step : forall n m p,
   m <= S p ->
   n <= p.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m p H1 H2.
+  apply le_S_n. apply le_trans with (b := m).
+  apply H1. apply H2.
+Qed.
 (** [] *)
 
 (* ----------------------------------------------------------------- *)
@@ -378,7 +424,10 @@ Lemma rsc_trans :
       clos_refl_trans_1n R y z ->
       clos_refl_trans_1n R x z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X R x y z H1 H2. induction H1 as [| x w y H1 _ IH].
+  - apply H2.
+  - apply rt1n_trans with w. apply H1. apply IH. apply H2.
+Qed.
 (** [] *)
 
 (** Then we use these facts to prove that the two definitions of
@@ -390,7 +439,15 @@ Theorem rtc_rsc_coincide :
   forall (X:Type) (R: relation X) (x y : X),
     clos_refl_trans R x y <-> clos_refl_trans_1n R x y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X R x y. split.
+  - intros H. induction H.
+    * apply rsc_R. apply H.
+    * apply rt1n_refl.
+    * apply rsc_trans with y. apply IHclos_refl_trans1. apply IHclos_refl_trans2.
+  - intros H. induction H.
+    * apply rt_refl.
+    * apply rt_trans with y. apply rt_step. apply Hxy. apply IHclos_refl_trans_1n.
+Qed.
 (** [] *)
 
 (* 2022-06-16 11:18 *)
