@@ -208,15 +208,15 @@ Proof. reflexivity. Qed.
    your solution satisfies the test that follows. *)
 
 Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+  := <{ while 1 <= X do
+          Y := Y + X;
+          X := X - 1
+        end }>.
 
 Example pup_to_n_1 :
   test_ceval (X !-> 5) pup_to_n
   = Some (0, 15, 0).
-(* FILL IN HERE *) Admitted.
-(* 
 Proof. reflexivity. Qed.
-*)
 (** [] *)
 
 (** **** Exercise: 2 stars, standard, optional (peven)
@@ -225,9 +225,29 @@ Proof. reflexivity. Qed.
     sets [Z] to [1] otherwise.  Use [test_ceval] to test your
     program. *)
 
-(* FILL IN HERE
+Definition even_x := <{
+  while X <> 0 do
+    if Z = 1 then
+      Z := 0
+    else
+      Z := 1
+    end;
+    X := X - 1
+  end
+}>.
 
-    [] *)
+Example even_0: test_ceval (X !-> 0) even_x = Some (0, 0, 0).
+Proof. reflexivity. Qed.
+
+Example even_4: test_ceval (X !-> 4) even_x = Some (0, 0, 0).
+Proof. reflexivity. Qed.
+
+Example even_5: test_ceval (X !-> 5) even_x = Some (0, 0, 1).
+Proof. reflexivity. Qed.
+
+Example even_121: test_ceval (X !-> 121) even_x = Some (0, 0, 1).
+Proof. reflexivity. Qed.
+(* [] *)
 
 (* ################################################################# *)
 (** * Relational vs. Step-Indexed Evaluation *)
@@ -299,7 +319,44 @@ Proof.
     the main ideas to a human reader; do not simply transcribe the
     steps of the formal proof. *)
 
-(* FILL IN HERE *)
+(*
+    _Theorem_: For all [c] [st] [st'], if exists [i] such that [ceval_step st c i = Some st'],
+    then [st =[c]=> st'].
+
+    _Proof_: We can reword the statement of the theorem as follows:
+    for all [i], [c], [st] and [st'], if [ceval_step st c i = Some st'],
+    then [st =[c]=> st']. And we will prove it by induction on [i].
+
+    If [i = 0] then [ceval_step] must produce [None] and therefore
+    the implication is trivially true.
+
+    Suppose that [i = S n] and for all [c], [n], [st], [st'], from [ceval_step st c n = Some st']
+    follows [st =[c]=> st']. Let's assume that for some [c], [n], [st] and [st']
+    [ceval_step st c i = Some st'].
+
+    Cases where [c] is a skip or an assignment, follow trivially from the [ceval_step] definition.
+
+    If [c = c1; c2], since we know that [ceval_step st c i = Some st'], then
+    there must exist [st''] such that [ceval_step st c1 n = Some st'']
+    and [ceval_step st'' c2 st' = Some st']. Using induction hypothesis we get
+    [st =[c1]=> st''] and [st'' =[c2]=> st'], which implies [st =[c1; c2]=> st']
+    by the definition of [=[..]>].
+
+    If [c = if b then c1 else c2 end], we need to consider two subcases for [beval st b].
+    Suppose that [beval st b = true], that means that
+      Some st' = ceval_step st c i = ceval_step st c1 n.
+    Therefore by the induction hypothesis [st =[c1]=> st'] and hence [st =[c]=> st']
+    holds by the definition of [=[]=>].
+    The [beval st b = false] case can be proven in the same way.
+
+    Finally, suppose that [c = while b do c' end].
+    If [beval st b = false] then [st =[c]=> st] follows trivially.
+    Otherwise by the definition of [ceval_step] it must be that [ceval_step st n c' = Some st'']
+    and [ceval_step st'' n c = Some st']. By applying induction hypothesis and the [=[]=>] definition
+    for whiles we can derive that [st =[c]=> st'].
+
+    _Qed.
+*)
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_ceval_step__ceval_inf : option (nat*string) := None.
@@ -360,7 +417,24 @@ Theorem ceval__ceval_step: forall c st st',
 Proof.
   intros c st st' Hce.
   induction Hce.
-  (* FILL IN HERE *) Admitted.
+  - exists 1. reflexivity.
+  - exists 1. rewrite <- H. reflexivity.
+  - destruct IHHce1 as [i1 H1]. destruct IHHce2 as [i2 H2].
+    apply (ceval_step_more i1 (i1 + i2)) in H1.
+    apply (ceval_step_more i2 (i1 + i2)) in H2.
+    exists (S (i1 + i2)). simpl. rewrite H1. apply H2.
+    rewrite add_comm. lia. lia.
+  - destruct IHHce as [i Hi]. exists (S i). simpl.
+    rewrite H. apply Hi.
+  - destruct IHHce as [i Hi]. exists (S i). simpl.
+    rewrite H. apply Hi.
+  - exists 1. simpl. rewrite H. reflexivity.
+  - destruct IHHce1 as [i1 H1]. destruct IHHce2 as [i2 H2].
+    apply (ceval_step_more i1 (i1 + i2)) in H1.
+    apply (ceval_step_more i2 (i1 + i2)) in H2.
+    exists (S (i1 + i2)). simpl. rewrite H1. rewrite H. apply H2.
+    rewrite add_comm. lia. lia.
+Qed.
 (** [] *)
 
 Theorem ceval_and_ceval_step_coincide: forall c st st',
